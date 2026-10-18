@@ -1,3 +1,5 @@
+**English** · [Español](es/macos.md)
+
 # Mr. Mak Workspace on macOS
 
 The desktop app was built for Windows (and Linux). This document covers the macOS port:

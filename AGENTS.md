@@ -6,9 +6,11 @@ working. Ask for missing personal preferences; do not invent a biography.
 
 ## Working rules
 
-- Keep Workspace content in English unless another language is explicitly
-  requested for that output. A conversation in another language does not change
-  the default language of stored work.
+- Keep Workspace content in the language set under "Stored content" in
+  `context/preferences.md` (English by default) unless another language is
+  explicitly requested for that output. A conversation in another language does
+  not change the default language of stored work. The app's interface language
+  (Settings > Appearance > Language) is separate and does not change it either.
 - Check `processes/` for an existing workflow and `knowledge/` for prior decisions.
 - Use the project skills in `.agents/skills/`. Claude entries in
   `.claude/skills/` are complete distribution copies. After editing a shared skill,

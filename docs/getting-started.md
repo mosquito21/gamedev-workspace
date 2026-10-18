@@ -1,3 +1,5 @@
+**English** · [Español](es/getting-started.md)
+
 # Getting started
 
 Mr. Mak is a local desktop workspace for working with several agents. Its files

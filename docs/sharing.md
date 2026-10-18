@@ -1,3 +1,5 @@
+**English** · [Español](es/sharing.md)
+
 # Sharing your version
 
 Start from this template's clean history. Add only the examples and instructions

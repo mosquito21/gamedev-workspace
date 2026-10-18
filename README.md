@@ -1,3 +1,5 @@
+**English** · [Español](README.es.md)
+
 # Mr. Mak Workspace
 
 Your CLI agents, a visual Workspace, and access from your phone.

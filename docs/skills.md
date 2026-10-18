@@ -1,3 +1,5 @@
+**English** · [Español](es/skills.md)
+
 # Project skills
 
 Twenty skills live in this project. `.agents/skills` is the maintained source

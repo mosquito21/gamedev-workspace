@@ -1,3 +1,5 @@
+**English** · [Español](README.es.md)
+
 # Desktop architecture
 
 The desktop app is a Tauri 2 shell around two webviews. It starts one local Node

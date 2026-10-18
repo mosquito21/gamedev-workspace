@@ -1,3 +1,5 @@
+**English** · [Español](es/updating.md)
+
 # Update an existing Workspace
 
 The application and your project folder are separate. The Windows installer

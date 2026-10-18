@@ -1,3 +1,5 @@
+**English** · [Español](es/customization.md)
+
 # Make Workspace yours
 
 ## Change in Settings

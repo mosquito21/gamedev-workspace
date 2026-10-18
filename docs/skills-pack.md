@@ -1,3 +1,5 @@
+**English** · [Español](es/skills-pack.md)
+
 # Mr. Mak agent skills
 
 This pack contains 20 project-local workflows for Codex CLI and Claude Code.

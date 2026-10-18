@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Compare3DManifest, Compare3DTest } from '../types'
 import { ModelViewer, type CameraState, type ShadingMode, type ViewerStats } from '../lib/three/viewer'
+import { currentLocale, t, useLanguage } from '../lib/i18n'
 
 /**
  * Side-by-side 3D comparison card.
@@ -36,12 +37,12 @@ const TEXTURE_MODES: ModeDef[] = [
 
 const ALL_MODES = [...GEOMETRY_MODES, ...TEXTURE_MODES]
 
-const fmt = (n: number) => n.toLocaleString('en-US')
+const fmt = (n: number) => n.toLocaleString(currentLocale())
 
 /** 8192 → "8K", 2048 → "2K", 1536 → "1536px". */
 function texLabel(px: number): string | null {
   if (!px) return null
-  return px % 1024 === 0 ? `${px / 1024}K tex` : `${px}px tex`
+  return px % 1024 === 0 ? t('{size}K tex', { size: px / 1024 }) : t('{size}px tex', { size: px })
 }
 
 /** One canvas pane. Owns a ModelViewer for its lifetime. */
@@ -72,6 +73,7 @@ function Pane({
   syncRef: React.MutableRefObject<((from: ModelViewer, s: CameraState) => void) | null>
   registerViewer: (v: ModelViewer | null) => void
 }) {
+  const { tn } = useLanguage()
   const hostRef = useRef<HTMLDivElement>(null)
   const viewerRef = useRef<ModelViewer | null>(null)
   const [stats, setStats] = useState<ViewerStats | null>(null)
@@ -129,7 +131,7 @@ function Pane({
               className={`c3d-pane-name c3d-pane-name-btn${redacted ? ' redacted' : ''}`}
               style={accent && !redacted ? { color: accent } : undefined}
               onClick={onToggleReveal}
-              title={redacted ? 'Click to reveal the name' : 'Click to hide the name again'}
+              title={redacted ? t('Click to reveal the name') : t('Click to hide the name again')}
             >
               {redacted ? alias : label}
             </button>
@@ -137,8 +139,8 @@ function Pane({
               type="button"
               className="c3d-eye"
               onClick={onToggleReveal}
-              aria-label={redacted ? 'Reveal the model name' : 'Hide the model name'}
-              title={redacted ? 'Reveal the model name' : 'Hide the model name'}
+              aria-label={redacted ? t('Reveal the model name') : t('Hide the model name')}
+              title={redacted ? t('Reveal the model name') : t('Hide the model name')}
             >
               <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden>
                 <path
@@ -162,9 +164,8 @@ function Pane({
         {sublabel && <span className="c3d-pane-sub">{sublabel}</span>}
         {stats && (
           <span className="c3d-pane-stats">
-            {fmt(stats.triangles)} tris · {fmt(stats.vertices)} verts · {stats.meshes}{' '}
-            {stats.meshes === 1 ? 'mesh' : 'meshes'}
-            {texLabel(stats.textureSize) ? ` · ${texLabel(stats.textureSize)}` : ' · untextured'}
+            {t('{count} tris', { count: fmt(stats.triangles) })} · {t('{count} verts', { count: fmt(stats.vertices) })} · {tn(stats.meshes, '{count} mesh', '{count} meshes')}
+            {texLabel(stats.textureSize) ? ` · ${texLabel(stats.textureSize)}` : ` · ${t('untextured')}`}
           </span>
         )}
       </div>
@@ -175,12 +176,12 @@ function Pane({
         {status === 'loading' && (
           <div className="c3d-overlay">
             <div className="c3d-spinner" />
-            <span>loading</span>
+            <span>{t('loading')}</span>
           </div>
         )}
         {status === 'error' && (
           <div className="c3d-overlay c3d-overlay-error">
-            <strong>Failed to load</strong>
+            <strong>{t('Failed to load')}</strong>
             <span>{errMsg}</span>
           </div>
         )}
@@ -190,6 +191,7 @@ function Pane({
 }
 
 export default function Compare3D({ manifestUrl, baseUrl }: { manifestUrl: string; baseUrl: string }) {
+  useLanguage()
   const [manifest, setManifest] = useState<Compare3DManifest | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [testIndex, setTestIndex] = useState(0)
@@ -301,7 +303,7 @@ export default function Compare3D({ manifestUrl, baseUrl }: { manifestUrl: strin
   if (loadError) {
     return (
       <div className="c3d-boot c3d-boot-error">
-        <strong>Could not read the comparison manifest</strong>
+        <strong>{t('Could not read the comparison manifest')}</strong>
         <code>{manifestUrl}</code>
         <span>{loadError}</span>
       </div>
@@ -329,8 +331,8 @@ export default function Compare3D({ manifestUrl, baseUrl }: { manifestUrl: strin
           <button
             className="c3d-step"
             onClick={() => setTestIndex(i => (i - 1 + manifest.tests.length) % manifest.tests.length)}
-            title="Previous test (←)"
-            aria-label="Previous test"
+            title={t('Previous test (←)')}
+            aria-label={t('Previous test')}
           >
             ‹
           </button>
@@ -339,7 +341,7 @@ export default function Compare3D({ manifestUrl, baseUrl }: { manifestUrl: strin
             value={testIndex}
             onChange={e => setTestIndex(Number(e.target.value))}
             title={test.note ?? test.name}
-            aria-label="Test"
+            aria-label={t('Test')}
           >
             {manifest.tests.map((t, i) => (
               <option key={t.id} value={i}>
@@ -350,8 +352,8 @@ export default function Compare3D({ manifestUrl, baseUrl }: { manifestUrl: strin
           <button
             className="c3d-step"
             onClick={() => setTestIndex(i => (i + 1) % manifest.tests.length)}
-            title="Next test (→)"
-            aria-label="Next test"
+            title={t('Next test (→)')}
+            aria-label={t('Next test')}
           >
             ›
           </button>
@@ -360,15 +362,15 @@ export default function Compare3D({ manifestUrl, baseUrl }: { manifestUrl: strin
           </span>
         </div>
 
-        <div className="c3d-modes" role="group" aria-label="Shading mode">
+        <div className="c3d-modes" role="group" aria-label={t('Shading mode')}>
           {modes.map((m, i) => (
             <button
               key={m.id}
               className={`c3d-mode${mode === m.id ? ' active' : ''}`}
               onClick={() => setMode(m.id)}
-              title={`${m.hint}  ·  ${i + 1}`}
+              title={`${t(m.hint)}  ·  ${i + 1}`}
             >
-              {m.label}
+              {t(m.label)}
             </button>
           ))}
         </div>
@@ -377,27 +379,27 @@ export default function Compare3D({ manifestUrl, baseUrl }: { manifestUrl: strin
           <button
             className={`c3d-toggle${sync ? ' on' : ''}`}
             onClick={() => setSync(v => !v)}
-            title="Lock both cameras together (S)"
+            title={t('Lock both cameras together (S)')}
           >
-            Sync
+            {t('Sync')}
           </button>
           <button
             className={`c3d-toggle${spin ? ' on' : ''}`}
             onClick={() => setSpin(v => !v)}
-            title="Auto-rotate both models (Space)"
+            title={t('Auto-rotate both models (Space)')}
           >
-            Spin
+            {t('Spin')}
           </button>
-          <button className="c3d-toggle" onClick={resetCameras} title="Re-frame both models (R)">
-            Reset
+          <button className="c3d-toggle" onClick={resetCameras} title={t('Re-frame both models (R)')}>
+            {t('Reset')}
           </button>
           {test?.input && (
             <button
               className={`c3d-toggle${showInput ? ' on' : ''}`}
               onClick={() => setShowInput(v => !v)}
-              title="Show the reference image this test was generated from (I)"
+              title={t('Show the reference image this test was generated from (I)')}
             >
-              Input
+              {t('Input')}
             </button>
           )}
 
@@ -426,8 +428,8 @@ export default function Compare3D({ manifestUrl, baseUrl }: { manifestUrl: strin
 
         {test.input && showInput && (
           <div className="c3d-input" onClick={() => setShowInput(false)} role="presentation">
-            <img src={`${baseUrl}/${test.input}`} alt={`Reference image for ${test.name}`} />
-            <span className="c3d-input-cap">reference — click or I to close</span>
+            <img src={`${baseUrl}/${test.input}`} alt={t('Reference image for {name}', { name: test.name })} />
+            <span className="c3d-input-cap">{t('reference — click or I to close')}</span>
           </div>
         )}
 

@@ -5,6 +5,7 @@ import { api } from '../desktop/client'
 import type { Preview } from '../desktop/types'
 import './documents.css'
 import { ZoomImage } from './ImagePreview'
+import { useT } from '../lib/i18n'
 
 const drafts = new Map<string, string>()
 function restoreDraft(key: string, fallback: string) {
@@ -22,6 +23,7 @@ export function MarkdownView({ text, baseUrl }: { text: string; baseUrl?: string
 }
 
 export default function MarkdownDocument({ file }: { file: Preview }) {
+  const t = useT()
   const draftKey = `mrmak.md-draft.${file.path}`
   const [saved, setSaved] = useState(file.text || '')
   const [draft, setDraft] = useState(() => restoreDraft(draftKey, file.text || ''))
@@ -39,19 +41,19 @@ export default function MarkdownDocument({ file }: { file: Preview }) {
   }, [dirty, draft, draftKey])
   const save = async () => {
     if (busy || !dirty) return
-    setBusy(true); setStatus('Saving…')
+    setBusy(true); setStatus(t('Saving…'))
     try {
       const result = await api<Preview>('/files/markdown', { path: file.path, text: draft, revision })
-      setSaved(result.text || ''); setDraft(result.text || ''); setRevision(result.revision); setStatus('Saved')
+      setSaved(result.text || ''); setDraft(result.text || ''); setRevision(result.revision); setStatus(t('Saved'))
     } catch (error) { setStatus(error instanceof Error ? error.message : String(error)) }
     finally { setBusy(false) }
   }
   return <section className="markdown-document">
-    <div className="document-toolbar"><div className="document-modes" aria-label="Markdown mode"><button aria-pressed={!editing} onClick={() => setEditing(false)}>Preview</button><button aria-pressed={editing} onClick={() => setEditing(true)}>Edit</button></div>
-      <span className="document-status" role="status">{status || (dirty ? 'Unsaved draft' : 'Markdown')}</span>
-      {dirty && <button disabled={busy} onClick={() => { setDraft(saved); setStatus('Draft discarded') }}>Discard</button>}
-      <button className="document-save" disabled={!dirty || busy} onClick={() => void save()}>Save</button>
+    <div className="document-toolbar"><div className="document-modes" aria-label={t('Markdown mode')}><button aria-pressed={!editing} onClick={() => setEditing(false)}>{t('Preview')}</button><button aria-pressed={editing} onClick={() => setEditing(true)}>{t('Edit')}</button></div>
+      <span className="document-status" role="status">{status || (dirty ? t('Unsaved draft') : 'Markdown')}</span>
+      {dirty && <button disabled={busy} onClick={() => { setDraft(saved); setStatus(t('Draft discarded')) }}>{t('Discard')}</button>}
+      <button className="document-save" disabled={!dirty || busy} onClick={() => void save()}>{t('Save')}</button>
     </div>
-    {editing ? <textarea className="markdown-editor" aria-label={`Edit ${file.name}`} spellCheck={false} value={draft} onChange={event => { setDraft(event.target.value); setStatus('') }} onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); void save() } }} /> : <div className="markdown-reader"><MarkdownView text={draft} baseUrl={file.url} /></div>}
+    {editing ? <textarea className="markdown-editor" aria-label={t('Edit {name}', { name: file.name })} spellCheck={false} value={draft} onChange={event => { setDraft(event.target.value); setStatus('') }} onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); void save() } }} /> : <div className="markdown-reader"><MarkdownView text={draft} baseUrl={file.url} /></div>}
   </section>
 }

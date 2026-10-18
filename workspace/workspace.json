@@ -4,6 +4,12 @@
       "id": "my-dream-game",
       "title": "My Dream Game",
       "description": "Mr. Mak 64: a small Sky Islands adventure, with character studies, world layouts and a development board.",
+      "translations": {
+        "es": {
+          "title": "Mi juego soñado",
+          "description": "Mr. Mak 64: una pequeña aventura en las Islas del Cielo, con estudios de personajes, diseños de mundo y un tablero de desarrollo."
+        }
+      },
       "type": "group",
       "category": "project",
       "created": "2026-09-15",
@@ -12,7 +18,12 @@
       "steps": [
         {
           "name": "Mr. Mak 64",
-          "path": "index.html"
+          "path": "index.html",
+          "translations": {
+            "es": {
+              "name": "Mr. Mak 64"
+            }
+          }
         }
       ],
       "status": "active",
@@ -24,6 +35,12 @@
       "id": "creative-mcp",
       "title": "Creative MCP Connections",
       "description": "A source-linked starter list for Blender, game engines, generation and project skills.",
+      "translations": {
+        "es": {
+          "title": "Conexiones MCP creativas",
+          "description": "Una lista inicial con fuentes para Blender, motores de juego, generación y skills de proyecto."
+        }
+      },
       "type": "group",
       "category": "research",
       "created": "2026-09-15",
@@ -32,11 +49,22 @@
       "steps": [
         {
           "name": "Tool shortlist",
-          "path": "report.html"
+          "path": "report.html",
+          "translations": {
+            "es": {
+              "name": "Herramientas preseleccionadas"
+            }
+          }
         },
         {
           "name": "Connect a tool",
-          "path": "connect.md"
+          "path": "connect.md",
+          "translations": {
+            "es": {
+              "name": "Conectar una herramienta",
+              "path": "connect.es.md"
+            }
+          }
         }
       ],
       "status": "active",
@@ -48,6 +76,12 @@
       "id": "make-workspace-yours",
       "title": "Make Workspace Yours",
       "description": "Install the app, understand the daily workflow and choose what to customize.",
+      "translations": {
+        "es": {
+          "title": "Haz tuyo el Workspace",
+          "description": "Instala la app, entiende el flujo de trabajo diario y elige qué personalizar."
+        }
+      },
       "type": "group",
       "category": "dev",
       "created": "2026-09-15",
@@ -56,15 +90,33 @@
       "steps": [
         {
           "name": "Get started",
-          "path": "get-started.md"
+          "path": "get-started.md",
+          "translations": {
+            "es": {
+              "name": "Primeros pasos",
+              "path": "get-started.es.md"
+            }
+          }
         },
         {
           "name": "Everyday use",
-          "path": "everyday-use.md"
+          "path": "everyday-use.md",
+          "translations": {
+            "es": {
+              "name": "Uso diario",
+              "path": "everyday-use.es.md"
+            }
+          }
         },
         {
           "name": "Customize",
-          "path": "customize.md"
+          "path": "customize.md",
+          "translations": {
+            "es": {
+              "name": "Personalizar",
+              "path": "customize.es.md"
+            }
+          }
         }
       ],
       "status": "active",
@@ -76,6 +128,12 @@
       "id": "arachne-character",
       "title": "Arachne Character Lab",
       "description": "From creature concepts to a refined spider queen: nine design rounds and eight motion studies.",
+      "translations": {
+        "es": {
+          "title": "Laboratorio del personaje Arachne",
+          "description": "De conceptos de criaturas a una reina araña refinada: nueve rondas de diseño y ocho estudios de movimiento."
+        }
+      },
       "type": "group",
       "category": "image-gen",
       "created": "2026-09-15",
@@ -84,43 +142,93 @@
       "steps": [
         {
           "name": "Version 1 · Creature concepts",
-          "path": "report.html"
+          "path": "report.html",
+          "translations": {
+            "es": {
+              "name": "Versión 1 · Conceptos de criaturas"
+            }
+          }
         },
         {
           "name": "Version 2 · A stronger premise",
-          "path": "report_v2.html"
+          "path": "report_v2.html",
+          "translations": {
+            "es": {
+              "name": "Versión 2 · Una premisa más sólida"
+            }
+          }
         },
         {
           "name": "Version 3 · Four directions",
-          "path": "report_v3.html"
+          "path": "report_v3.html",
+          "translations": {
+            "es": {
+              "name": "Versión 3 · Cuatro direcciones"
+            }
+          }
         },
         {
           "name": "Version 4 · Targeted refinement",
-          "path": "report_v4.html"
+          "path": "report_v4.html",
+          "translations": {
+            "es": {
+              "name": "Versión 4 · Refinamiento dirigido"
+            }
+          }
         },
         {
           "name": "Version 5 · Arachne exploration",
-          "path": "report_v5.html"
+          "path": "report_v5.html",
+          "translations": {
+            "es": {
+              "name": "Versión 5 · Exploración de Arachne"
+            }
+          }
         },
         {
           "name": "Version 6 · Style refinement",
-          "path": "report_v6.html"
+          "path": "report_v6.html",
+          "translations": {
+            "es": {
+              "name": "Versión 6 · Refinamiento de estilo"
+            }
+          }
         },
         {
           "name": "Version 7 · The mixed direction",
-          "path": "report_v7.html"
+          "path": "report_v7.html",
+          "translations": {
+            "es": {
+              "name": "Versión 7 · La dirección mixta"
+            }
+          }
         },
         {
           "name": "Version 8 · A coherent queen",
-          "path": "report_v8.html"
+          "path": "report_v8.html",
+          "translations": {
+            "es": {
+              "name": "Versión 8 · Una reina coherente"
+            }
+          }
         },
         {
           "name": "Version 9 · Palette studies",
-          "path": "report_v9.html"
+          "path": "report_v9.html",
+          "translations": {
+            "es": {
+              "name": "Versión 9 · Estudios de paleta"
+            }
+          }
         },
         {
           "name": "Motion Tests",
-          "path": "report_motion.html"
+          "path": "report_motion.html",
+          "translations": {
+            "es": {
+              "name": "Pruebas de movimiento"
+            }
+          }
         }
       ],
       "status": "active",

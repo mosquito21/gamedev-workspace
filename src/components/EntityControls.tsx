@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState
 import { createPortal } from 'react-dom'
 import type { WorkspaceEntity } from '../types'
 import { updateWorkspaceEntity, type EntityPatch } from '../lib/workspace'
-import { CATEGORY_ICONS } from '../lib/categories'
+import { CATEGORY_ICONS, categoryLabel } from '../lib/categories'
+import { useT } from '../lib/i18n'
 import { isDesktop } from '../desktop/client'
 import './entity-controls.css'
 
@@ -12,14 +13,16 @@ type Target = { id: string; button: HTMLButtonElement; anchor: DOMRect }
 
 export function EntityStatusButton({ entity }: { entity: WorkspaceEntity }) {
   const controls = useContext(Controls)
+  const t = useT()
+  const status = t(labels[entity.status])
   return (
     <button
       type="button"
       className="entity-status-button"
-      aria-label={`Edit ${entity.title}: ${labels[entity.status]}`}
+      aria-label={t('Edit {title}: {status}', { title: entity.title, status })}
       aria-haspopup="dialog"
       aria-expanded={controls?.editing === entity.id}
-      title={`${labels[entity.status]} · ${isDesktop ? 'Change status or category' : 'Open the desktop app to edit this card'}`}
+      title={`${status} · ${isDesktop ? t('Change status or category') : t('Open the desktop app to edit this card')}`}
       disabled={!isDesktop}
       onClick={event => controls?.open(entity, event.currentTarget)}
     >
@@ -36,6 +39,7 @@ function EntityMenu({ entity, entities, target, onClose, onChanged }: {
   onChanged: () => Promise<void>
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
+  const t = useT()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const category = entity.category || 'other'
@@ -71,7 +75,7 @@ function EntityMenu({ entity, entities, target, onClose, onChanged }: {
       await onChanged()
       onClose()
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'The card could not be updated. Try again.')
+      setError(reason instanceof Error ? reason.message : t('The card could not be updated. Try again.'))
     } finally { setSaving(false) }
   }
 
@@ -79,7 +83,7 @@ function EntityMenu({ entity, entities, target, onClose, onChanged }: {
     <dialog
       ref={dialog}
       className="entity-menu"
-      aria-label={`Card settings: ${entity.title}`}
+      aria-label={t('Card settings: {title}', { title: entity.title })}
       aria-busy={saving}
       onCancel={event => { event.preventDefault(); if (!saving) onClose() }}
       onClick={event => {
@@ -90,32 +94,32 @@ function EntityMenu({ entity, entities, target, onClose, onChanged }: {
       onKeyDown={event => event.stopPropagation()}
     >
       <div className="entity-menu-heading">
-        <div><span>Card settings</span><h2>{entity.title}</h2></div>
-        <button type="button" className="entity-menu-close" aria-label="Close card settings" disabled={saving} onClick={onClose}>×</button>
+        <div><span>{t('Card settings')}</span><h2>{entity.title}</h2></div>
+        <button type="button" className="entity-menu-close" aria-label={t('Close card settings')} disabled={saving} onClick={onClose}>×</button>
       </div>
       <fieldset disabled={saving}>
-        <legend>Status</legend>
+        <legend>{t('Status')}</legend>
         <div className="entity-status-options">
           {(Object.keys(labels) as Array<WorkspaceEntity['status']>).map(status => (
             <button type="button" key={status} aria-pressed={entity.status === status} onClick={() => void save({ status })}>
               <span className={`status-dot ${status}`} aria-hidden="true" />
-              <span>{labels[status]}</span>
+              <span>{t(labels[status])}</span>
               <span className="entity-status-check" aria-hidden="true">{entity.status === status ? '✓' : ''}</span>
             </button>
           ))}
         </div>
       </fieldset>
       <label className="entity-category-control">
-        Category
-        <select aria-label="Card category" value={category} disabled={saving} onChange={event => void save({ category: event.target.value })}>
-          {categories.map(value => <option key={value} value={value}>{value.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</option>)}
+        {t('Category')}
+        <select aria-label={t('Card category')} value={category} disabled={saving} onChange={event => void save({ category: event.target.value })}>
+          {categories.map(value => <option key={value} value={value}>{categoryLabel(value, true)}</option>)}
         </select>
       </label>
       <button type="button" className="entity-pin-toggle" disabled={saving} onClick={() => void save({ pinned: !entity.pinned })}>
-        {entity.pinned ? 'Unpin card' : 'Pin card'}
+        {entity.pinned ? t('Unpin card') : t('Pin card')}
       </button>
-      <p className="entity-menu-hint">Archived cards keep their files and tabs. Find them in search or Show archive.</p>
-      {saving && <p className="entity-menu-feedback" role="status">Saving…</p>}
+      <p className="entity-menu-hint">{t('Archived cards keep their files and tabs. Find them in search or Show archive.')}</p>
+      {saving && <p className="entity-menu-feedback" role="status">{t('Saving…')}</p>}
       {error && <p className="entity-menu-error" role="alert">{error}</p>}
     </dialog>, document.body,
   )

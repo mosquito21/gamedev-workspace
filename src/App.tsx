@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { WorkspaceEntity } from './types'
 import { useWorkspace, archiveCutoff } from './lib/workspace'
 import { parseHash, entityHash, resolveStep, type Route } from './lib/route'
@@ -9,6 +9,8 @@ import HomeGrid from './components/HomeGrid'
 import EntityControls from './components/EntityControls'
 import ReportBoundary from './components/ReportBoundary'
 import { contentUrl, isDesktop } from './desktop/client'
+import { useLanguage } from './lib/i18n'
+import { localizeEntities } from './lib/workspace-i18n'
 
 const Compare3D = lazy(() => import('./components/Compare3D'))
 const ReportViewer = lazy(() => import('./components/ReportViewer'))
@@ -23,6 +25,7 @@ const byFreshness = (a: WorkspaceEntity, b: WorkspaceEntity) =>
 
 export default function App() {
   const { workspace, offline, lastSync, reload } = useWorkspace()
+  const { language, t } = useLanguage()
   const [route, setRoute] = useState<Route>(parseHash)
   const [query, setQuery] = useState('')
   const [showArchived, setShowArchived] = useState(false)
@@ -35,7 +38,8 @@ export default function App() {
     localStorage.setItem('mak.sidebarCollapsed', collapsed ? '1' : '0')
   }, [collapsed])
 
-  const entities = workspace?.entities ?? []
+  // Card titles, descriptions and tab files follow the interface language.
+  const entities = useMemo(() => localizeEntities(workspace?.entities ?? [], language), [workspace, language])
   const entity = entities.find(e => e.id === route.id) ?? null
 
   const stepIndex = entity
@@ -72,7 +76,7 @@ export default function App() {
 
   useEffect(() => {
     document.title = entity ? `Mr. Mak — ${entity.title}` : 'Mr. Mak — Workspace'
-  }, [entity])
+  }, [entity, language])
 
   const goHome = useCallback(() => {
     history.pushState(null, '', window.location.pathname + window.location.search)
@@ -146,8 +150,8 @@ export default function App() {
       <button
         className="sidebar-reopen"
         onClick={() => setCollapsed(false)}
-        title="Show menu — press Mr. Mak's nose ( [ )"
-        aria-label="Show menu"
+        title={t("Show menu — press Mr. Mak's nose ( [ )")}
+        aria-label={t('Show menu')}
       >
         <MakLogo size={38} animated={route.id !== 'my-dream-game'} />
       </button>

@@ -15,7 +15,19 @@ assert.deepEqual(samples.map(e => e.category).sort(), ['dev', 'image-gen', 'proj
 const images = new Set(), videos = new Set(), arachneImages = new Set();
 for (const entity of entities) {
   if (entity.defaultStep !== undefined) assert.ok(Number.isInteger(entity.defaultStep) && entity.defaultStep >= 0 && entity.defaultStep < entity.steps.length);
+  for (const [language, local] of Object.entries(entity.translations || {})) {
+    assert.equal(language, 'es', `${entity.id}: unsupported card language ${language}`);
+    assert.ok(Object.keys(local).every(key => ['title', 'description'].includes(key) && typeof local[key] === 'string' && local[key].trim()), `${entity.id}: card translations take a title and description`);
+  }
   for (const step of entity.steps) {
+    for (const [language, local] of Object.entries(step.translations || {})) {
+      assert.equal(language, 'es', `${entity.id}: unsupported tab language ${language}`);
+      assert.ok(Object.keys(local).every(key => ['name', 'path'].includes(key) && typeof local[key] === 'string' && local[key].trim()), `${entity.id}: tab translations take a name and path`);
+      if (local.path) {
+        assert.equal(path.extname(local.path), path.extname(step.path), `${entity.id}: a translated tab keeps its file type`);
+        assert.ok((await read(path.join('workspace', entity.folder, local.path))).trim(), `${entity.id}: ${local.path} is empty`);
+      }
+    }
     const file = path.join('workspace', entity.folder, step.path);
     const content = await read(file);
     assert.ok(content.trim(), `${file} is empty`);

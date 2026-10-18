@@ -1,6 +1,7 @@
 import type { WorkspaceEntity } from '../types'
 import { entityHash } from '../lib/route'
-import { categoryIcon } from '../lib/categories'
+import { categoryIcon, categoryLabel } from '../lib/categories'
+import { useLanguage } from '../lib/i18n'
 import { contentUrl } from '../desktop/client'
 import { EntityStatusButton } from './EntityControls'
 
@@ -11,6 +12,7 @@ import { EntityStatusButton } from './EntityControls'
  * scripts/shared/report_style.py for generated reports.
  */
 export default function MakCard({ entity }: { entity: WorkspaceEntity }) {
+  const { t, tn } = useLanguage()
   const steps = entity.steps.length
   return (
     <div className="entity-card-wrap" data-card={entity.id}>
@@ -22,9 +24,9 @@ export default function MakCard({ entity }: { entity: WorkspaceEntity }) {
       <div className="card-top">
         <span className="chip">
           <span aria-hidden="true">{categoryIcon(entity.category)}</span>
-          {entity.category || 'other'}
+          {categoryLabel(entity.category || 'other')}
         </span>
-        {entity.pinned && <span className="chip chip-pin">pinned</span>}
+        {entity.pinned && <span className="chip chip-pin">{t('pinned')}</span>}
       </div>
 
       <div className="card-project-title">
@@ -36,12 +38,12 @@ export default function MakCard({ entity }: { entity: WorkspaceEntity }) {
 
       <div className="card-foot">
         <span>
-          {steps} step{steps === 1 ? '' : 's'}
+          {tn(steps, '{count} step', '{count} steps')}
         </span>
         <span>·</span>
         <span>{entity.updated ?? entity.created}</span>
         <span className="card-open" aria-hidden="true">
-          open →
+          {t('open →')}
         </span>
       </div>
     </a>

@@ -7,6 +7,8 @@ export interface WorkspaceStep {
    * the step renders the side-by-side 3D viewer instead.
    */
   viewer?: 'compare3d'
+  /** Localized tab name and file (relative to the entity folder) per interface language. */
+  translations?: Partial<Record<'es', { name?: string; path?: string }>>
 }
 
 export interface WorkspaceEntity {
@@ -28,6 +30,8 @@ export interface WorkspaceEntity {
   pinned?: boolean
   /** Starter examples remain visible until explicitly archived. */
   sample?: boolean
+  /** Localized title and description per interface language; English stays in title/description. */
+  translations?: Partial<Record<'es', { title?: string; description?: string }>>
 }
 
 export interface WorkspaceState {

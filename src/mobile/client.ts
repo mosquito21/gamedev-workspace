@@ -3,7 +3,7 @@ import type { AgentInfo, ChatSession } from '../desktop/types'
 import { resetMobileNavigation } from './app-state'
 import { clearVoiceDrafts, type VoiceDraft } from './voice-drafts'
 import { anySignal } from '../lib/abort'
-import { t } from '../lib/i18n'
+import { t, currentLanguage } from '../lib/i18n'
 
 export interface DictationInfo { available: boolean; provider: string | null; providers?: { id: string; label: string; available: boolean; detail: string }[]; maxSeconds: number; maxBytes: number }
 
@@ -22,7 +22,7 @@ const update = (value: Partial<MobileState>) => { state = { ...state, ...value }
 export function useMobile() { return useSyncExternalStore(listener => { listeners.add(listener); return () => listeners.delete(listener) }, () => state) }
 export class MobileError extends Error { status: number; constructor(message: string, status: number) { super(message); this.status = status } }
 export async function mobileApi<T = unknown>(route: string, data?: unknown, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(`/mobile/api${route}`, { method: data === undefined ? 'GET' : 'POST', credentials: 'same-origin', headers: data === undefined ? {} : { 'Content-Type': 'application/json' }, body: data === undefined ? undefined : JSON.stringify(data), signal: signal ? anySignal([signal, AbortSignal.timeout(25000)]) : AbortSignal.timeout(25000) })
+  const response = await fetch(`/mobile/api${route}`, { method: data === undefined ? 'GET' : 'POST', credentials: 'same-origin', headers: { 'X-Mrmak-Language': currentLanguage(), ...(data === undefined ? {} : { 'Content-Type': 'application/json' }) }, body: data === undefined ? undefined : JSON.stringify(data), signal: signal ? anySignal([signal, AbortSignal.timeout(25000)]) : AbortSignal.timeout(25000) })
   const result = await response.json()
   if (signal?.aborted) throw new DOMException('Connection attempt cancelled', 'AbortError')
   if (!response.ok) {

@@ -9,8 +9,8 @@ pub fn open_popup(url: tauri::Url) -> tauri::webview::NewWindowResponse<tauri::W
         std::thread::spawn(move || {
             if let Err(error) = open_browser(&url) {
                 rfd::MessageDialog::new()
-                    .set_title("Could not open your browser")
-                    .set_description(format!("{error}\nCheck the default browser in your system settings."))
+                    .set_title(crate::i18n::tr("Could not open your browser"))
+                    .set_description(format!("{error}\n{}", crate::i18n::tr("Check the default browser in your system settings.")))
                     .set_level(rfd::MessageLevel::Error)
                     .show();
             }
@@ -22,14 +22,14 @@ pub fn open_popup(url: tauri::Url) -> tauri::webview::NewWindowResponse<tauri::W
 #[cfg(windows)]
 fn open_browser(url: &tauri::Url) -> Result<(), String> {
     use windows_sys::Win32::{System::Com::{CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED}, UI::{Shell::ShellExecuteW, WindowsAndMessaging::SW_SHOWNORMAL}};
-    if !is_web_url(url) { return Err("Only HTTP and HTTPS browser links are supported.".into()); }
+    if !is_web_url(url) { return Err(crate::i18n::tr("Only HTTP and HTTPS browser links are supported.").into()); }
     let verb: Vec<u16> = "open\0".encode_utf16().collect();
     let target: Vec<u16> = url.as_str().encode_utf16().chain(Some(0)).collect();
     unsafe {
         let initialized = CoInitializeEx(std::ptr::null(), COINIT_APARTMENTTHREADED as u32);
         let result = ShellExecuteW(std::ptr::null_mut(), verb.as_ptr(), target.as_ptr(), std::ptr::null(), std::ptr::null(), SW_SHOWNORMAL) as isize;
         if initialized >= 0 { CoUninitialize(); }
-        if result > 32 { Ok(()) } else { Err(format!("Windows could not open this web link (code {result}).")) }
+        if result > 32 { Ok(()) } else { Err(crate::i18n::link_failed(result)) }
     }
 }
 
@@ -55,7 +55,7 @@ fn is_package(target: &std::path::Path) -> bool {
 fn open_browser(url: &tauri::Url) -> Result<(), String> {
     use std::process::Command;
     let program = if cfg!(target_os = "macos") { "open" } else { "xdg-open" };
-    spawn_reaped(Command::new(program).arg(url.as_str())).map_err(|error| format!("Could not start {program}: {error}"))
+    spawn_reaped(Command::new(program).arg(url.as_str())).map_err(|error| crate::i18n::could_not_start(program, &error))
 }
 
 pub fn reveal_path(path: &str) -> Result<(), String> {
@@ -76,7 +76,7 @@ pub fn reveal_path(path: &str) -> Result<(), String> {
         }
         let folder = if target.is_dir() { target } else { target.parent().unwrap_or(target) };
         let program = if cfg!(target_os = "macos") { "open" } else { "xdg-open" };
-        spawn_reaped(Command::new(program).arg(folder)).map_err(|error| format!("Could not start {program}: {error}"))
+        spawn_reaped(Command::new(program).arg(folder)).map_err(|error| crate::i18n::could_not_start(program, &error))
     }
 }
 

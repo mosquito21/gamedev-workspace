@@ -6,20 +6,22 @@ import { serveFile } from './files.mjs';
 
 const extensions = new Set(['.html', '.htm', '.md', '.txt', '.css', '.js', '.mjs', '.json', '.svg', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.ico', '.mp4', '.webm', '.mp3', '.wav', '.ogg', '.pdf', '.woff', '.woff2', '.ttf', '.glb', '.gltf', '.bin', '.wasm']);
 const safePath = value => typeof value === 'string' && value.length < 1200 && !value.split(/[\\/]/).some(part => !part || part.startsWith('.') || /^(node_modules|auth\.json|tokens?\.json)$/i.test(part)) && !path.isAbsolute(value) && !value.includes(':');
+// Optional per-language overrides from workspace.json (`translations.es`).
+const localized = (item, language) => (language && language !== 'en' && item?.translations?.[language]) || {};
 const fail = (message, status = 403) => { throw Object.assign(new Error(message), { status }); };
 
 export class MobileReports {
   constructor(gateway) { this.gateway = gateway; this.grants = new Map(); }
   async registry() { return (await readJson(path.join(this.gateway.repo, 'workspace/workspace.json'), { entities: [] })).entities || []; }
-  async list() {
-    return (await this.registry()).filter(item => item.status !== 'archived' && safePath(item.folder)).map(item => ({ id: item.id, title: item.title, category: item.category, updated: item.updated || item.created, steps: (item.steps || []).map((step, index) => ({ name: step.name, index })) })).filter(item => item.steps.length).sort((a, b) => String(b.updated).localeCompare(String(a.updated)));
+  async list(language = 'en') {
+    return (await this.registry()).filter(item => item.status !== 'archived' && safePath(item.folder)).map(item => ({ id: item.id, title: localized(item, language).title || item.title, category: item.category, updated: item.updated || item.created, steps: (item.steps || []).map((step, index) => ({ name: localized(step, language).name || step.name, index })) })).filter(item => item.steps.length).sort((a, b) => String(b.updated).localeCompare(String(a.updated)));
   }
-  async open(device, { entityId, step = 0 }) {
+  async open(device, { entityId, step = 0, language = 'en' }) {
     const entity = (await this.registry()).find(item => item.id === entityId);
     if (!entity || !safePath(entity.folder) || !Number.isInteger(step) || !safePath(entity.steps?.[step]?.path)) fail('This report is unavailable on mobile.', 404);
     const root = await realpath(path.join(this.gateway.repo, 'workspace', entity.folder));
     if (!within(await realpath(this.gateway.repo), root)) fail('This report folder is outside the Workspace repository.');
-    const relative = entity.steps[step].path, { file, info } = await realFile(root, relative);
+    const translated = localized(entity.steps[step], language), relative = safePath(translated.path) ? translated.path : entity.steps[step].path, { file, info } = await realFile(root, relative);
     if (!info.isFile()) fail('Report not found', 404);
     const extension = path.extname(file).toLowerCase();
     if (!['.html', '.htm', '.md', '.txt'].includes(extension)) fail('Open this type of report on your computer.');
@@ -30,7 +32,7 @@ export class MobileReports {
     if (!existing && this.grants.size >= 100) this.grants.delete(this.grants.keys().next().value);
     this.grants.set(token, { root, prefix, deviceId: device.id, expires: Date.now() + 30 * 60 * 1000 });
     const url = `/mobile/view/${token}/${prefix}${relative.split(/[\\/]/).map(encodeURIComponent).join('/')}`;
-    return { statePersistence: true, title: entity.title, step: entity.steps[step].name, kind: extension === '.md' || extension === '.txt' ? 'markdown' : 'html', url, ...(extension === '.md' || extension === '.txt' ? { text: (await readFile(file, 'utf8')).slice(0, 2 * 1024 * 1024) } : {}) };
+    return { statePersistence: true, title: localized(entity, language).title || entity.title, step: translated.name || entity.steps[step].name, kind: extension === '.md' || extension === '.txt' ? 'markdown' : 'html', url, ...(extension === '.md' || extension === '.txt' ? { text: (await readFile(file, 'utf8')).slice(0, 2 * 1024 * 1024) } : {}) };
   }
   async serve(request, response, url) {
     const gateway = this.gateway;

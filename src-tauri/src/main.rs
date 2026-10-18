@@ -4,12 +4,16 @@ use std::{fs, io::{BufRead, BufReader, Write}, path::PathBuf, process::{Child, C
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem}, tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState}};
 use tauri_plugin_window_state::StateFlags;
 mod external_links;
+mod i18n;
+use i18n::tr;
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 #[cfg(windows)]
 use std::os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle};
 
 struct Service(Mutex<Option<Child>>);
+// Tray items whose text follows the language setting while the app runs.
+struct TrayItems { workspace: MenuItem<tauri::Wry>, chats: MenuItem<tauri::Wry>, both: MenuItem<tauri::Wry>, quit: MenuItem<tauri::Wry> }
 #[cfg(windows)]
 struct ServiceJob(Mutex<Option<OwnedHandle>>);
 #[cfg(windows)]
@@ -99,7 +103,7 @@ fn publish_shortcut(app: &tauri::AppHandle, request_id: Option<&str>, error: Opt
 #[cfg(any(windows, target_os = "macos"))]
 fn set_shortcut(app: &tauri::AppHandle, enabled: bool, request_id: Option<&str>) {
     let result = (|| -> Result<(), Box<dyn std::error::Error>> {
-        let shortcut = app.try_state::<RecallShortcut>().ok_or("Shortcut unavailable")?;
+        let shortcut = app.try_state::<RecallShortcut>().ok_or(tr("Shortcut unavailable"))?;
         let folder = app.path().app_config_dir()?;
         fs::create_dir_all(&folder)?;
         fs::write(folder.join("windows-key.json"), if enabled { "true" } else { "false" })?;
@@ -137,7 +141,7 @@ fn start_file_drag(app: &tauri::AppHandle, paths: Vec<PathBuf>) {
 #[derive(Debug)]
 struct Cancelled;
 impl std::fmt::Display for Cancelled {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { f.write_str("No Workspace repository selected") }
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { f.write_str(tr("No Workspace repository selected")) }
 }
 impl std::error::Error for Cancelled {}
 
@@ -156,10 +160,10 @@ fn repo_path(app: &tauri::AppHandle) -> Result<PathBuf, Box<dyn std::error::Erro
                 return Ok(root.to_owned());
             }
         }
-        selected = rfd::FileDialog::new().set_title("Choose your Mr. Mak Workspace repository").pick_folder();
+        selected = rfd::FileDialog::new().set_title(tr("Choose your Mr. Mak Workspace repository")).pick_folder();
         if selected.is_none() { return Err(Cancelled.into()); }
         if !selected.as_ref().unwrap().join("workspace/workspace.json").is_file() {
-            rfd::MessageDialog::new().set_title("Choose the Workspace folder").set_description("Select the repository folder containing workspace/workspace.json.").show();
+            rfd::MessageDialog::new().set_title(tr("Choose the Workspace folder")).set_description(tr("Select the repository folder containing workspace/workspace.json.")).show();
         }
     }
 }
@@ -355,6 +359,20 @@ fn install_chats_menu(app: &tauri::AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
+// The service reports a language change; the tray follows it at once. Window
+// titles keep the product and window names, which are not translated.
+fn retitle_tray(app: &tauri::AppHandle) {
+    if let Some(items) = app.try_state::<TrayItems>() {
+        let _ = items.workspace.set_text(tr("Show Workspace"));
+        let _ = items.chats.set_text(tr("Show Chats"));
+        let _ = items.both.set_text(tr("Show both windows"));
+        let _ = items.quit.set_text(tr("Quit Mr. Mak and stop terminals"));
+    }
+    #[cfg(any(windows, target_os = "macos"))]
+    if let Some(item) = app.try_state::<CheckMenuItem<tauri::Wry>>() { let _ = item.set_text(i18n::shortcut_item(RECALL_LABEL)); }
+    if let Some(tray) = app.tray_by_id("main") { let _ = tray.set_tooltip(Some(tr("Mr. Mak — your agents, close at hand"))); }
+}
+
 // Tauri panics on a setup error, which macOS reports as a crash. Show the
 // error and quit instead, quietly when the repository picker was cancelled.
 fn guarded_setup(app: &mut tauri::App, setup: impl FnOnce(&mut tauri::App) -> Result<(), Box<dyn std::error::Error>>) -> Result<(), Box<dyn std::error::Error>> {
@@ -362,7 +380,7 @@ fn guarded_setup(app: &mut tauri::App, setup: impl FnOnce(&mut tauri::App) -> Re
     if !cfg!(target_os = "macos") { return Err(error); }
     let cancelled = error.downcast_ref::<Cancelled>().is_some();
     if !cancelled {
-        rfd::MessageDialog::new().set_level(rfd::MessageLevel::Error).set_title("Mr. Mak could not start").set_description(error.to_string()).show();
+        rfd::MessageDialog::new().set_level(rfd::MessageLevel::Error).set_title(tr("Mr. Mak could not start")).set_description(error.to_string()).show();
     }
     app.handle().exit(if cancelled { 0 } else { 1 });
     Ok(())
@@ -382,7 +400,9 @@ fn main() {
             if std::env::args().any(|arg| arg == "--quit") { app.handle().exit(0); return Ok(()); }
             #[cfg(windows)]
             window_identity::initialize(app.handle())?;
+            i18n::init(None);
             let repo = repo_path(app.handle())?;
+            i18n::init(Some(&repo));
             let resource_dir = app.path().resource_dir()?;
             let runtime = resource_dir.join("runtime");
             let runtime_node = if cfg!(windows) { runtime.join("node.exe") } else { runtime.join("node") };
@@ -397,7 +417,7 @@ fn main() {
             let log = fs::OpenOptions::new().create(true).append(true).open(&service_log)?;
             let mut command = Command::new(node);
             command.arg(script).arg("--repo").arg(&repo).arg("--ui").arg(ui).current_dir(&repo)
-                .env("MRMAK_PARENT_PID", std::process::id().to_string()).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::from(log));
+                .env("MRMAK_PARENT_PID", std::process::id().to_string()).env("MRMAK_SYSTEM_LANGUAGE", i18n::system_language()).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::from(log));
             #[cfg(target_os = "macos")]
             login_environment(&mut command);
             let mut child = hidden(&mut command).spawn()?;
@@ -426,7 +446,7 @@ fn main() {
                             let chats = event["chats"].as_str().unwrap_or("").to_owned();
                             let _ = app_handle.run_on_main_thread(move || {
                                 if let Err(error) = make_windows(&handle, &workspace, &chats) {
-                                    rfd::MessageDialog::new().set_title("Mr. Mak could not open").set_description(error.to_string()).show(); handle.exit(1);
+                                    rfd::MessageDialog::new().set_title(tr("Mr. Mak could not open")).set_description(error.to_string()).show(); handle.exit(1);
                                 }
                             });
                         },
@@ -467,29 +487,37 @@ fn main() {
                             if let (Some(window), Some(request_id)) = (app_handle.get_webview_window("chats"), event["requestId"].as_str()) {
                                 let request_id = request_id.to_owned();
                                 std::thread::spawn(move || {
-                                    let paths = rfd::FileDialog::new().set_parent(&window).set_title("Attach file paths").pick_files().unwrap_or_default();
+                                    let paths = rfd::FileDialog::new().set_parent(&window).set_title(tr("Attach file paths")).pick_files().unwrap_or_default();
                                     let detail = serde_json::json!({ "requestId": request_id, "paths": paths });
                                     let _ = window.eval(format!("window.dispatchEvent(new CustomEvent('mrmak-picked-files',{{detail:{detail}}}))"));
                                 });
                             }
                         },
                         "reveal" => { if let Some(file) = event["path"].as_str() { let _ = external_links::reveal_path(file); } },
+                        "language" => {
+                            if let Some(language) = event["language"].as_str() {
+                                i18n::set(language);
+                                let handle = app_handle.clone();
+                                let _ = app_handle.run_on_main_thread(move || retitle_tray(&handle));
+                            }
+                        },
                         _ => {}
                     }
                 }
                 if app_handle.get_webview_window("workspace").is_none() {
-                    rfd::MessageDialog::new().set_title("Mr. Mak service did not start").set_description(format!("The local service stopped before opening the windows. See {} for details.", service_log.display())).show();
+                    rfd::MessageDialog::new().set_title(tr("Mr. Mak service did not start")).set_description(i18n::service_stopped(&service_log)).show();
                     app_handle.exit(1);
                 }
             });
             #[cfg(target_os = "macos")]
             install_chats_menu(app.handle())?;
-            let workspace_item = MenuItem::with_id(app, "workspace", "Show Workspace", true, None::<&str>)?;
-            let chats_item = MenuItem::with_id(app, "chats", "Show Chats", true, None::<&str>)?;
-            let both_item = MenuItem::with_id(app, "both", "Show both windows", true, None::<&str>)?;
-            let quit_item = MenuItem::with_id(app, "quit", "Quit Mr. Mak and stop terminals", true, None::<&str>)?;
+            let workspace_item = MenuItem::with_id(app, "workspace", tr("Show Workspace"), true, None::<&str>)?;
+            let chats_item = MenuItem::with_id(app, "chats", tr("Show Chats"), true, None::<&str>)?;
+            let both_item = MenuItem::with_id(app, "both", tr("Show both windows"), true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", tr("Quit Mr. Mak and stop terminals"), true, None::<&str>)?;
             let separator = PredefinedMenuItem::separator(app)?;
             let menu = Menu::with_items(app, &[&workspace_item, &chats_item, &both_item, &separator, &quit_item])?;
+            app.manage(TrayItems { workspace: workspace_item, chats: chats_item, both: both_item, quit: quit_item });
             #[cfg(any(windows, target_os = "macos"))]
             {
                 let preference = app.path().app_config_dir()?.join("windows-key.json");
@@ -497,16 +525,16 @@ fn main() {
                 let shortcut = RecallShortcut::start(app.handle(), enabled);
                 let available = shortcut.is_ok();
                 if let Ok(shortcut) = shortcut { app.manage(shortcut); }
-                let item = CheckMenuItem::with_id(app, "win-key", format!("{RECALL_LABEL} shows Mr. Mak"), available, enabled && available, None::<&str>)?;
+                let item = CheckMenuItem::with_id(app, "win-key", i18n::shortcut_item(RECALL_LABEL), available, enabled && available, None::<&str>)?;
                 menu.insert(&item, 3)?;
                 app.manage(item);
-                publish_shortcut(app.handle(), None, if available { None } else { Some(format!("The system could not register {RECALL_LABEL}.")) });
+                publish_shortcut(app.handle(), None, if available { None } else { Some(i18n::shortcut_unavailable(RECALL_LABEL)) });
             }
             #[cfg(target_os = "macos")]
-            let tray = TrayIconBuilder::new().icon(menu_bar_icon()?).icon_as_template(true);
+            let tray = TrayIconBuilder::with_id("main").icon(menu_bar_icon()?).icon_as_template(true);
             #[cfg(not(target_os = "macos"))]
-            let tray = TrayIconBuilder::new().icon(app.default_window_icon().unwrap().clone());
-            tray.tooltip("Mr. Mak — your agents, close at hand")
+            let tray = TrayIconBuilder::with_id("main").icon(app.default_window_icon().unwrap().clone());
+            tray.tooltip(tr("Mr. Mak — your agents, close at hand"))
                 .menu(&menu).show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "workspace" => reveal(app, "workspace"), "chats" => reveal(app, "chats"),
@@ -541,7 +569,7 @@ fn main() {
                 if let Some(job) = app.try_state::<ServiceJob>() { job.0.lock().unwrap().take(); }
             }
         }),
-        Err(error) => { rfd::MessageDialog::new().set_title("Mr. Mak could not start").set_description(error.to_string()).show(); }
+        Err(error) => { rfd::MessageDialog::new().set_title(tr("Mr. Mak could not start")).set_description(error.to_string()).show(); }
     }
 }
 

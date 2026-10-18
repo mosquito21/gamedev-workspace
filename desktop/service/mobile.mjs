@@ -15,6 +15,7 @@ import { ConversationTranscripts } from './mobile-transcript.mjs';
 import { projectKey, recentProjects } from './recent-projects.mjs';
 import { MobileReports } from './mobile-reports.mjs';
 import { MobileDictation } from './mobile-dictation.mjs';
+import { localizeDictation, localizeTranscript, requestLanguage, translate } from './i18n.mjs';
 
 const digest = value => createHash('sha256').update(value).digest('hex');
 const fail = (message, status = 400) => { throw Object.assign(new Error(message), { status }); };
@@ -47,7 +48,8 @@ export class MobileGateway {
         this.checkRequest(request, true);
         if (new URL(request.url, this.origin).pathname !== '/mobile/events') fail('Not found', 404);
         const device = this.device(request);
-        this.wss.handleUpgrade(request, socket, head, ws => this.connect(ws, device));
+        const language = this.language(request);
+        this.wss.handleUpgrade(request, socket, head, ws => this.connect(ws, device, language));
       } catch { socket.destroy(); }
     });
     this.handlers = {
@@ -169,9 +171,11 @@ export class MobileGateway {
   }
   list() { return this.sessions.list().filter(item => item.agent !== 'shell'); }
   projects() { return recentProjects({ repo: this.repo, sessions: this.sessions.list(), pinned: this.settings().pinnedProjects || [] }); }
-  broadcast(event) { for (const ws of this.clients) send(ws, event); }
-  connect(ws, device) {
-    ws.deviceId = device.id; ws.alive = true; ws.sessionId = null; this.clients.add(ws);
+  // Each phone reads the service's text in its own language (see requestLanguage).
+  language(request) { return requestLanguage(request, this.settings().language); }
+  broadcast(event) { for (const ws of this.clients) send(ws, event.dictation ? { ...event, dictation: localizeDictation(event.dictation, ws.language) } : event); }
+  connect(ws, device, language = 'en') {
+    ws.deviceId = device.id; ws.alive = true; ws.sessionId = null; ws.language = language; this.clients.add(ws);
     device.lastSeen = new Date().toISOString(); this.save().catch(() => {}); this.notify();
     send(ws, { type: 'connected', sessions: this.list() });
     ws.on('pong', () => { ws.alive = true; });
@@ -186,7 +190,7 @@ export class MobileGateway {
         } else if (event.type === 'seen' && ws.sessionId === event.id) this.sessions.seen(event.id, event.completionVersion);
         else if (event.type === 'ping') send(ws, { type: 'pong' });
         else fail('This mobile action is not available.');
-      } catch (error) { send(ws, { type: 'error', error: publicError(error) }); }
+      } catch (error) { send(ws, { type: 'error', error: translate(publicError(error), ws.language) }); }
     });
     ws.on('close', () => { this.clients.delete(ws); this.notify(); }); ws.on('error', () => {});
   }
@@ -241,6 +245,7 @@ export class MobileGateway {
   }
   async request(request, response) {
     response.setHeader('Cache-Control', 'no-store'); response.setHeader('X-Content-Type-Options', 'nosniff'); response.setHeader('Referrer-Policy', 'no-referrer');
+    const language = this.language(request), tr = message => translate(message, language);
     try {
       if (request.url.startsWith('/mobile/view/')) return await this.reports.serve(request, response, new URL(request.url, this.origin || this.localOrigin));
       const mutation = !['GET', 'HEAD'].includes(request.method);
@@ -263,12 +268,12 @@ export class MobileGateway {
         if (method === 'GET' && route === '/mobile/api/read-aloud') return json(response, 200, await this.readAloud.status());
         const media = /^\/mobile\/api\/sessions\/([a-f0-9-]{36})\/media\/([a-zA-Z0-9_-]{43})$/.exec(route);
         if (media && ['GET', 'HEAD'].includes(method)) { this.session(media[1]); return await this.conversationMedia.serve(request, response, media[1], media[2], device.id, url.searchParams.get('download') === '1'); }
-        if (method === 'GET' && route === '/mobile/api/dictation') return json(response, 200, await this.dictation.status());
-        if (method === 'POST' && route === '/mobile/api/dictation') return json(response, 200, await this.chooseDictation(data.provider));
+        if (method === 'GET' && route === '/mobile/api/dictation') return json(response, 200, localizeDictation(await this.dictation.status(), language));
+        if (method === 'POST' && route === '/mobile/api/dictation') return json(response, 200, localizeDictation(await this.chooseDictation(data.provider), language));
         if (method === 'POST' && route === '/mobile/api/transcribe') return json(response, 200, await this.dictation.transcribe(request, device.id, () => this.active && this.state.devices.some(item => item.id === device.id && item.expires > Date.now())));
-        if (method === 'GET' && route === '/mobile/api/reports') return json(response, 200, await this.reports.list());
-        if (method === 'POST' && route === '/mobile/api/reports/open') return json(response, 200, await this.reports.open(device, data));
-        if (method === 'GET' && route === '/mobile/api/bootstrap') return json(response, 200, { sessions: this.list(), agents: inventory().filter(item => item.id !== 'shell'), device: { id: device.id, name: device.name }, defaultAgent: this.settings().defaultAgent, defaultBypass: this.settings().defaultBypass, dictation: await this.dictation.status() });
+        if (method === 'GET' && route === '/mobile/api/reports') return json(response, 200, await this.reports.list(language));
+        if (method === 'POST' && route === '/mobile/api/reports/open') return json(response, 200, await this.reports.open(device, { ...data, language }));
+        if (method === 'GET' && route === '/mobile/api/bootstrap') return json(response, 200, { sessions: this.list(), agents: inventory().filter(item => item.id !== 'shell'), device: { id: device.id, name: device.name }, defaultAgent: this.settings().defaultAgent, defaultBypass: this.settings().defaultBypass, dictation: localizeDictation(await this.dictation.status(), language) });
         if (method === 'POST' && route === '/mobile/api/disconnect') { await this.revoke(device.id); response.setHeader('Set-Cookie', this.cookie('', true)); return json(response, 200, { disconnected: true }); }
         if (method === 'POST' && route === '/mobile/api/images') {
           if (this.uploads.size >= 150) fail('Too many pending images. Try again later.', 429);
@@ -289,7 +294,7 @@ export class MobileGateway {
         const match = /^\/mobile\/api\/sessions\/([a-f0-9-]{36})\/(messages|send|resume|close|key|read-aloud)$/.exec(route);
         if (match) {
           const session = this.session(match[1]);
-          if (method === 'GET' && match[2] === 'messages') return json(response, 200, await this.conversationMedia.present(await this.transcripts.read(session), session, device.id));
+          if (method === 'GET' && match[2] === 'messages') return json(response, 200, localizeTranscript(await this.conversationMedia.present(await this.transcripts.read(session), session, device.id), language));
           if (method === 'POST' && match[2] === 'read-aloud') {
             const controller = new AbortController(); let complete = false;
             const abort = () => { if (!complete) controller.abort(); };
@@ -300,7 +305,7 @@ export class MobileGateway {
               complete = true; response.writeHead(200, { 'Content-Type': 'audio/wav', 'Content-Length': audio.length, 'Cache-Control': 'no-store' }); response.end(audio); return;
             } finally { response.off('close', abort); }
           }
-          if (method === 'POST' && match[2] === 'send') return json(response, 200, await this.submit(device, session.id, data));
+          if (method === 'POST' && match[2] === 'send') { const receipt = await this.submit(device, session.id, data); return json(response, 200, receipt?.error ? { ...receipt, error: tr(receipt.error) } : receipt); }
           if (method === 'POST' && match[2] === 'resume') return json(response, 200, session.process ? this.list().find(item => item.id === session.id) : await this.sessions.resume(session.id));
           if (method === 'POST' && match[2] === 'close') return json(response, 200, await this.closeChat(session.id));
           if (method === 'POST' && match[2] === 'key') {
@@ -328,7 +333,7 @@ export class MobileGateway {
         'Cache-Control': route.startsWith('/assets/') ? 'private, max-age=3600' : 'no-store', 'X-Frame-Options': 'DENY',
         'Content-Security-Policy': `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self' ${this.origin.replace(/^http/, 'ws')}; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'`,
       });
-    } catch (error) { if (!response.headersSent) json(response, error.status || 400, { error: publicError(error) }); else response.destroy(); }
+    } catch (error) { if (!response.headersSent) json(response, error.status || 400, { error: tr(publicError(error)) }); else response.destroy(); }
   }
   async close() {
     if (this.closed) return; this.closed = true;

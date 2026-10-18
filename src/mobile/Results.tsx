@@ -7,7 +7,7 @@ import { mobileApi, onMobileEvent, reconnectMobile, useMobile } from './client'
 import { mobileBack, reportPosition, saveReportPosition, selectMobileWorkspace, useMobileWorkspace, validReportPosition } from './app-state'
 import { rememberMobileReport, rememberMobileReports } from './workspace-context'
 import { PULL_REFRESH_DISTANCE, pullOffset, usePullRefresh } from './usePullRefresh'
-import { tn, useT } from '../lib/i18n'
+import { tn, useLanguage } from '../lib/i18n'
 
 interface Report { id: string; title: string; category: string; updated: string; steps: { name: string; index: number }[] }
 interface Preview { title: string; step: string; kind: 'markdown' | 'html'; url: string; text?: string; statePersistence?: boolean }
@@ -19,7 +19,7 @@ function restoredReportUrl(preview: Preview, id: string, step: number) {
 }
 
 export default function Results({ header, active }: { header: HTMLElement | null; active: boolean }) {
-  const t = useT()
+  const { t, language } = useLanguage()
   const selection = useMobileWorkspace(), { step } = selection
   const [reports, setReports] = useState<Report[]>([]), [opened, setOpened] = useState<{ id: string; step: number; value: Preview; url: string; at: number; revision: number } | null>(null)
   const selected = reports.find(report => report.id === selection.id) || null
@@ -51,13 +51,13 @@ export default function Results({ header, active }: { header: HTMLElement | null
     }).catch(() => { if (current) setError(t('Connect to your computer to load reports.')) }).finally(() => { if (current && !selection.id) setRefreshing(false) })
     void load(); const off = onMobileEvent(event => { if (event.type === 'connected') void load() })
     return () => { current = false; off() }
-  }, [selection.id, step, revision])
+  }, [selection.id, step, revision, language])
   useEffect(() => {
     if (!selectedId) return
     let current = true
     mobileApi<Preview>('/reports/open', { entityId: selectedId, step }).then(value => { if (current) { rememberMobileReport(selectedId, step, value); setOpened({ id: selectedId, step, value, url: restoredReportUrl(value, selectedId, step), at: Date.now(), revision }); setError('') } }).catch(err => { if (current) setError(err instanceof Error ? err.message : String(err)) }).finally(() => { if (current) setRefreshing(false) })
     return () => { current = false }
-  }, [selectedId, step, revision]) // Registry refreshes preserve the active report document.
+  }, [selectedId, step, revision, language]) // Registry refreshes preserve the active report document.
   useEffect(() => {
     if (!selectedId || !opened || !opened.value.statePersistence || opened.id !== selectedId || opened.step !== step) return
     let current = true, refreshing = false

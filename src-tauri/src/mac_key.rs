@@ -23,7 +23,7 @@ impl RecallShortcut {
         if enabled == self.enabled() { return Ok(()); }
         let shortcuts = self.app.global_shortcut();
         let result = if enabled { shortcuts.register(shortcut()) } else { shortcuts.unregister(shortcut()) };
-        result.map_err(|error| format!("macOS could not {} {LABEL}: {error}", if enabled { "register" } else { "release" }))?;
+        result.map_err(|error| crate::i18n::shortcut_failed(enabled, LABEL, &error))?;
         self.enabled.store(enabled, Ordering::Relaxed);
         Ok(())
     }

@@ -1,3 +1,5 @@
+import { t } from '../lib/i18n'
+
 // Platform conventions for the desktop windows. Windows and Linux use Ctrl for
 // app shortcuts and copy/paste; macOS uses Cmd and leaves Ctrl to the terminal.
 const agent = typeof navigator === 'undefined' ? '' : `${navigator.platform} ${navigator.userAgent}`
@@ -12,4 +14,7 @@ export const shortcutLabel = (keys: string) => isMac ? `⌘${keys.replace(/Shift
 
 export const fileManager = isMac ? 'Finder' : isWindows ? 'Explorer' : 'the file manager'
 export const trashName = isWindows ? 'Recycle Bin' : 'Trash'
+/** Display names in the interface language. The constants above stay English for logic and other callers. */
+export const fileManagerLabel = () => t(fileManager)
+export const trashLabel = () => t(trashName)
 export const shellName = isWindows ? 'PowerShell' : 'Shell'

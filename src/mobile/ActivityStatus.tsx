@@ -1,10 +1,12 @@
 import { Icon } from '../desktop/Icons'
 import { chatActivityLabel } from '../desktop/chatActivity'
 import type { ChatSession } from '../desktop/types'
+import { useT } from '../lib/i18n'
 
 export default function ActivityStatus({ session, connected }: { session: ChatSession; connected: boolean }) {
+  const t = useT()
   const working = connected && session.status === 'running' && session.activity === 'working'
-  const label = connected ? chatActivityLabel(session) : 'Disconnected · reconnecting'
+  const label = connected ? chatActivityLabel(session) : t('Disconnected · reconnecting')
   const waiting = connected && session.activity === 'waiting'
   return <span className={`mobile-activity-status ${working ? 'working' : ''} ${waiting ? 'waiting' : ''}`} role="status" aria-label={label} title={label}>
     {working ? <svg width="34" height="28" viewBox="0 0 34 28" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

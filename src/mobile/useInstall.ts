@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { t } from '../lib/i18n'
 
 interface InstallPrompt extends Event {
   prompt(): Promise<void>
@@ -35,7 +36,7 @@ export function useInstall() {
       const choice = await event.userChoice
       if (choice.outcome === 'accepted') setInstalled(true)
       else dismiss()
-    } catch { setError('Installation could not open. Use your browser’s Install app or Add to Home Screen menu.') }
+    } catch { setError(t('Installation could not open. Use your browser’s Install app or Add to Home Screen menu.')) }
     finally { setBusy(false) }
   }
   return { available: available && !installed, installed, dismissed, busy, error, dismiss, install }

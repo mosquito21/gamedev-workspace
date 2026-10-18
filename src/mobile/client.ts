@@ -3,6 +3,7 @@ import type { AgentInfo, ChatSession } from '../desktop/types'
 import { resetMobileNavigation } from './app-state'
 import { clearVoiceDrafts, type VoiceDraft } from './voice-drafts'
 import { anySignal } from '../lib/abort'
+import { t } from '../lib/i18n'
 
 export interface DictationInfo { available: boolean; provider: string | null; providers?: { id: string; label: string; available: boolean; detail: string }[]; maxSeconds: number; maxBytes: number }
 
@@ -26,20 +27,20 @@ export async function mobileApi<T = unknown>(route: string, data?: unknown, sign
   if (signal?.aborted) throw new DOMException('Connection attempt cancelled', 'AbortError')
   if (!response.ok) {
     if (response.status === 401) { authRejected = true; update({ authenticated: false, connected: false }); socket?.close() }
-    throw new MobileError(result.error || 'Could not connect to your computer.', response.status)
+    throw new MobileError(result.error || t('Could not connect to your computer.'), response.status)
   }
   return result
 }
 export async function uploadMobileImage(file: File): Promise<{ id: string; name: string }> {
   const response = await fetch('/mobile/api/images', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/octet-stream', 'X-File-Name': encodeURIComponent(file.name) }, body: file, signal: AbortSignal.timeout(60000) })
   const result = await response.json()
-  if (!response.ok) throw new Error(result.error || 'Image upload failed.')
+  if (!response.ok) throw new Error(result.error || t('Image upload failed.'))
   return result
 }
 export async function transcribeMobileAudio(recording: VoiceDraft, signal: AbortSignal): Promise<{ text: string }> {
   const response = await fetch('/mobile/api/transcribe', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': recording.audio.type, 'X-Transcription-Id': recording.id }, body: recording.audio, signal: anySignal([signal, AbortSignal.timeout(270000)]) })
   const result = await response.json()
-  if (!response.ok) throw new MobileError(result.error || 'Could not transcribe this recording. Try again.', response.status)
+  if (!response.ok) throw new MobileError(result.error || t('Could not transcribe this recording. Try again.'), response.status)
   return result
 }
 export function selectMobileChat(id: string) { localStorage.setItem('mrmak.mobile.selected', id); update({ selectedId: id }) }
@@ -66,7 +67,7 @@ let lastReply = 0, lastPing = 0
 function recoverSocket(ws: WebSocket) {
   if (socket !== ws) return
   socket = null; clearTimeout(handshake); clearInterval(heartbeat)
-  update({ connected: false, error: 'Connection stalled. Reconnecting…' })
+  update({ connected: false, error: t('Connection stalled. Reconnecting…') })
   events.forEach(listener => listener({ type: 'disconnected' }))
   ws.close(); reconnect()
 }
@@ -90,7 +91,7 @@ export async function startMobile() {
       if (event.type === 'connected') { clearTimeout(handshake); update({ connected: true, sessions: event.sessions || state.sessions, error: '' }) }
       if (event.type === 'session' && event.session) { const next = event.session; update({ sessions: state.sessions.some(item => item.id === next.id) ? state.sessions.map(item => item.id === next.id ? next : item) : [...state.sessions, next] }) }
       if (event.type === 'dictation' && event.dictation) update({ dictation: event.dictation })
-      if (event.type === 'error') update({ error: event.error || 'Connection error' })
+      if (event.type === 'error') update({ error: event.error || t('Connection error') })
       events.forEach(listener => listener(event))
     }
     ws.onclose = () => { if (socket !== ws) return; socket = null; clearTimeout(handshake); clearInterval(heartbeat); update({ connected: false }); events.forEach(listener => listener({ type: 'disconnected' })); reconnect() }
@@ -104,7 +105,7 @@ export async function startMobile() {
     }, 5000)
   } catch (error) {
     if (version !== connectionVersion || controller.signal.aborted) return
-    update({ ready: true, connected: false, error: error instanceof MobileError && error.status === 401 ? '' : 'Your computer is unavailable. Keep Mr. Mak running and Tailscale connected.' })
+    update({ ready: true, connected: false, error: error instanceof MobileError && error.status === 401 ? '' : t('Your computer is unavailable. Keep Mr. Mak running and Tailscale connected.') })
     if (!(error instanceof MobileError && error.status === 401)) reconnect()
   } finally { if (version === connectionVersion) { starting = false; bootstrapAbort = null } }
 }

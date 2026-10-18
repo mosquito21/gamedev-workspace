@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { setWorkspaceTheme, useWorkspaceTheme, type WorkspaceTheme } from '../lib/workspace-theme'
+import { useT } from '../lib/i18n'
 
 export default function ThemePicker() {
   const { preference } = useWorkspaceTheme()
+  const t = useT()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const change = async (value: WorkspaceTheme) => {
@@ -12,10 +14,10 @@ export default function ThemePicker() {
     finally { setBusy(false) }
   }
   return <div className="workspace-theme-picker">
-    <label>Workspace theme<select aria-label="Workspace theme" value={preference} disabled={busy} onChange={event => void change(event.target.value as WorkspaceTheme)}>
-      <option value="dark">Dark</option><option value="light">Light</option><option value="system">System</option>
+    <label>{t('Workspace theme')}<select aria-label={t('Workspace theme')} value={preference} disabled={busy} onChange={event => void change(event.target.value as WorkspaceTheme)}>
+      <option value="dark">{t('Dark')}</option><option value="light">{t('Light')}</option><option value="system">{t('System')}</option>
     </select></label>
-    <p>Light uses dark text on a white background. System follows your device. Applies to Workspace and standard reports.</p>
+    <p>{t('Light uses dark text on a white background. System follows your device. Applies to Workspace and standard reports.')}</p>
     {error && <p role="alert">{error}</p>}
   </div>
 }

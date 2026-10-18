@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { readingVoiceChanged, savedReadingVoice } from './readingVoices'
+import { t } from '../lib/i18n'
 
 export function spokenText(element: HTMLElement | null) {
   if (!element) return ''
@@ -23,7 +24,7 @@ function chunks(text: string) {
 export type Speak = (sessionId: string, voice: string, text: string, signal: AbortSignal) => Promise<ArrayBuffer>
 async function speakOnPhone(sessionId: string, voice: string, text: string, signal: AbortSignal) {
   const response = await fetch(`/mobile/api/sessions/${sessionId}/read-aloud`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ voice, text }), signal })
-  if (!response.ok) { const result = await response.json(); throw new Error(result.error || 'Speech generation failed.') }
+  if (!response.ok) { const result = await response.json(); throw new Error(result.error || t('Speech generation failed.')) }
   return response.arrayBuffer()
 }
 export function useReadAloud(sessionId: string, speak: Speak = speakOnPhone) {
@@ -41,9 +42,9 @@ export function useReadAloud(sessionId: string, speak: Speak = speakOnPhone) {
     return () => { run.current++; request.current?.abort(); if (playback.current) void playback.current.close().catch(() => {}); window.removeEventListener(readingVoiceChanged, stop) }
   }, [stop])
   function read(id: string, text: string) {
-    if (!supported) { setError('Audio playback is unavailable in this browser.'); return }
+    if (!supported) { setError(t('Audio playback is unavailable in this browser.')); return }
     stop(); setError('')
-    if (!text.trim()) { setError('This reply has no text to read aloud.'); return }
+    if (!text.trim()) { setError(t('This reply has no text to read aloud.')); return }
     const audio = new AudioContext(); context.current = audio
     const unlocked = audio.resume(), run = generation.current, queue = chunks(text), voice = savedReadingVoice()
     setActiveId(id)
@@ -62,13 +63,13 @@ export function useReadAloud(sessionId: string, speak: Speak = speakOnPhone) {
         if (generation.current !== run) return
         const source = audio.createBufferSource(); source.buffer = buffer; source.connect(audio.destination)
         source.onended = () => { if (generation.current === run) void next() }; source.start(); setLoading(false)
-      } catch (cause) { if (generation.current !== run) return; stop(); setError(cause instanceof Error ? cause.message : 'Read aloud could not start.') }
+      } catch (cause) { if (generation.current !== run) return; stop(); setError(cause instanceof Error ? cause.message : t('Read aloud could not start.')) }
     }
     void next()
   }
   function togglePause() {
     const audio = context.current; if (!audio) return
-    void (paused ? audio.resume() : audio.suspend()).catch(() => { stop(); setError('Audio playback could not continue.') }); setPaused(!paused)
+    void (paused ? audio.resume() : audio.suspend()).catch(() => { stop(); setError(t('Audio playback could not continue.')) }); setPaused(!paused)
   }
   return { supported, activeId, paused, loading, error, read, stop, togglePause }
 }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Icon } from '../desktop/Icons'
 import { transcribeMobileAudio, type DictationInfo } from './client'
+import { useT } from '../lib/i18n'
 import { deleteVoiceDraft, readVoiceDraft, saveVoiceDraft, type VoiceDraft } from './voice-drafts'
 
 type Phase = 'idle' | 'permission' | 'recording' | 'transcribing' | 'saved'
@@ -9,6 +10,7 @@ export default function VoiceInput({ id, connected, disabled, config, onText, on
   transcriber?: typeof transcribeMobileAudio
   onText: (text: string, recordingId: string) => void | Promise<void>; onBusy: (busy: boolean) => void
 }) {
+  const t = useT()
   const [phase, setPhase] = useState<Phase>('idle'), [seconds, setSeconds] = useState(0), [error, setError] = useState('')
   const [recording, setRecording] = useState<VoiceDraft | null>(null), [recovered, setRecovered] = useState(false)
   const alive = useRef(true), stream = useRef<MediaStream | null>(null), recorder = useRef<MediaRecorder | null>(null)
@@ -28,7 +30,7 @@ export default function VoiceInput({ id, connected, disabled, config, onText, on
       if (!alive.current) return
       if (saved) { setRecording(saved); setSeconds(saved.seconds); setPhase('saved') }
       setRecovered(true)
-    }).catch(() => { if (alive.current) { setRecovered(true); setError('Recording recovery is unavailable. Keep this page open while dictating.') } })
+    }).catch(() => { if (alive.current) { setRecovered(true); setError(t('Recording recovery is unavailable. Keep this page open while dictating.')) } })
     const hidden = () => { if (document.visibilityState === 'hidden') stop() }
     document.addEventListener('visibilitychange', hidden)
     return () => { alive.current = false; controller.current?.abort(); stop(); document.removeEventListener('visibilitychange', hidden) }
@@ -48,13 +50,13 @@ export default function VoiceInput({ id, connected, disabled, config, onText, on
       setRecording(null); setPhase('idle'); setError('')
     } catch (err) {
       if (!alive.current || request !== serial.current) return
-      setPhase('saved'); setError(err instanceof Error ? err.message : 'Could not transcribe. Your recording is saved; try again.')
+      setPhase('saved'); setError(err instanceof Error ? err.message : t('Could not transcribe. Your recording is saved; try again.'))
     } finally { if (controller.current === abort) controller.current = null; if (alive.current && request === serial.current) busyHandler.current(false) }
   }
   async function start() {
     if (disabled || !connected || !recovered || phase !== 'idle') return
-    if (!config?.available) { setError(config?.provider === 'off' ? 'Dictation is off. Choose a provider in Phone settings or desktop Settings.' : config?.provider === 'openai' || config?.provider === 'openrouter' ? 'The selected paid provider needs an API key on your computer. Choose Local Whisper for free dictation.' : 'Set up local Whisper on your computer to enable free voice input.'); return }
-    if (!supported) { setError('Microphone recording is unavailable in this browser. Open the HTTPS page in Chrome or Safari, or use your keyboard microphone.'); return }
+    if (!config?.available) { setError(config?.provider === 'off' ? t('Dictation is off. Choose a provider in Phone settings or desktop Settings.') : config?.provider === 'openai' || config?.provider === 'openrouter' ? t('The selected paid provider needs an API key on your computer. Choose Local Whisper for free dictation.') : t('Set up local Whisper on your computer to enable free voice input.')); return }
+    if (!supported) { setError(t('Microphone recording is unavailable in this browser. Open the HTTPS page in Chrome or Safari, or use your keyboard microphone.')); return }
     setPhase('permission'); setError(''); busyHandler.current(true); discard.current = false
     const request = ++serial.current
     try {
@@ -63,16 +65,16 @@ export default function VoiceInput({ id, connected, disabled, config, onText, on
       if (document.visibilityState === 'hidden') { captured.getTracks().forEach(track => track.stop()); setPhase('idle'); busyHandler.current(false); return }
       stream.current = captured
       const mimeType = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus'].find(type => MediaRecorder.isTypeSupported(type))
-      if (!mimeType) throw new Error('This browser cannot record a supported audio format. Use your keyboard microphone.')
+      if (!mimeType) throw new Error(t('This browser cannot record a supported audio format. Use your keyboard microphone.'))
       const active = new MediaRecorder(captured, { mimeType, audioBitsPerSecond: 64000 })
       recorder.current = active
       const chunks: Blob[] = [], started = Date.now(); let size = 0
       active.ondataavailable = event => {
         if (!event.data.size) return
         chunks.push(event.data); size += event.data.size
-        if (size > config.maxBytes) { discard.current = true; stop(true); if (alive.current) setError('Recording is too large. Please record a shorter message.') }
+        if (size > config.maxBytes) { discard.current = true; stop(true); if (alive.current) setError(t('Recording is too large. Please record a shorter message.')) }
       }
-      active.onerror = () => { stop(true); if (alive.current) setError('Recording was interrupted. Please try again.') }
+      active.onerror = () => { stop(true); if (alive.current) setError(t('Recording was interrupted. Please try again.')) }
       active.onstop = () => {
         release(); recorder.current = null
         if (discard.current || !size) { if (alive.current) { setPhase('idle'); busyHandler.current(false) }; return }
@@ -82,7 +84,7 @@ export default function VoiceInput({ id, connected, disabled, config, onText, on
           try { await saveVoiceDraft(id, saved) } catch { durable = false }
           if (!alive.current) return
           setRecording(saved); setSeconds(saved.seconds); setPhase('saved'); busyHandler.current(false)
-          if (!durable) setError('Keep this page open: the phone could not save the recording. You can still transcribe or download it.')
+          if (!durable) setError(t('Keep this page open: the phone could not save the recording. You can still transcribe or download it.'))
           if (durable && document.visibilityState === 'visible') await transcribe(saved)
         })()
       }
@@ -95,12 +97,12 @@ export default function VoiceInput({ id, connected, disabled, config, onText, on
       release()
       if (!alive.current || request !== serial.current) return
       setPhase('idle'); busyHandler.current(false)
-      setError(err instanceof DOMException && err.name === 'NotAllowedError' ? 'Allow microphone access in your browser, then try again. Your typed draft is unchanged.' : err instanceof Error ? err.message : 'Could not start the microphone.')
+      setError(err instanceof DOMException && err.name === 'NotAllowedError' ? t('Allow microphone access in your browser, then try again. Your typed draft is unchanged.') : err instanceof Error ? err.message : t('Could not start the microphone.'))
     }
   }
   async function remove() {
     serial.current++; controller.current?.abort(); stop(true)
-    try { await deleteVoiceDraft(id) } catch { setError('Could not remove the saved recording. Try again.'); return }
+    try { await deleteVoiceDraft(id) } catch { setError(t('Could not remove the saved recording. Try again.')); return }
     setRecording(null); setPhase('idle'); setError(''); busyHandler.current(false)
   }
   function download() {
@@ -112,13 +114,13 @@ export default function VoiceInput({ id, connected, disabled, config, onText, on
   }
   const clock = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
   return <div className={`mobile-voice ${phase}`}>
-    <button type="button" className="mobile-icon mobile-mic" aria-label={phase === 'recording' ? 'Stop recording and transcribe' : 'Dictate a message'} title="Dictate a message" disabled={phase !== 'recording' && (disabled || !connected || !recovered || phase !== 'idle')} onClick={() => phase === 'recording' ? stop() : void start()}><Icon name={phase === 'recording' ? 'stop' : 'mic'} /></button>
+    <button type="button" className="mobile-icon mobile-mic" aria-label={phase === 'recording' ? t('Stop recording and transcribe') : t('Dictate a message')} title={t('Dictate a message')} disabled={phase !== 'recording' && (disabled || !connected || !recovered || phase !== 'idle')} onClick={() => phase === 'recording' ? stop() : void start()}><Icon name={phase === 'recording' ? 'stop' : 'mic'} /></button>
     {phase !== 'idle' && <div className="mobile-voice-panel" role="status">
-      <span>{phase === 'permission' ? 'Allow microphone access…' : phase === 'recording' ? `Recording ${clock} · tap Stop when finished` : phase === 'transcribing' ? 'Transcribing… Your message will stay a draft.' : `Saved recording · ${clock}`}</span>
-      {phase === 'recording' && <button type="button" onClick={() => stop(true)}>Cancel recording</button>}
-      {phase === 'saved' && <div><button type="button" disabled={!connected || disabled} onClick={() => recording && void transcribe(recording)}>Transcribe recording</button><button type="button" onClick={download}>Download audio</button><button type="button" onClick={() => void remove()}>Discard recording</button></div>}
-      {phase === 'recording' && <small>Up to {config?.maxSeconds || 120} seconds. Transcription uses {config?.provider === 'local' ? 'local Whisper on your computer; no API credit' : config?.provider === 'openrouter' ? 'OpenRouter API credit' : 'OpenAI API credit'}.</small>}
+      <span>{phase === 'permission' ? t('Allow microphone access…') : phase === 'recording' ? t('Recording {time} · tap Stop when finished', { time: clock }) : phase === 'transcribing' ? t('Transcribing… Your message will stay a draft.') : t('Saved recording · {time}', { time: clock })}</span>
+      {phase === 'recording' && <button type="button" onClick={() => stop(true)}>{t('Cancel recording')}</button>}
+      {phase === 'saved' && <div><button type="button" disabled={!connected || disabled} onClick={() => recording && void transcribe(recording)}>{t('Transcribe recording')}</button><button type="button" onClick={download}>{t('Download audio')}</button><button type="button" onClick={() => void remove()}>{t('Discard recording')}</button></div>}
+      {phase === 'recording' && <small>{t('Up to {seconds} seconds. Transcription uses {provider}.', { seconds: config?.maxSeconds || 120, provider: config?.provider === 'local' ? t('local Whisper on your computer; no API credit') : config?.provider === 'openrouter' ? t('OpenRouter API credit') : t('OpenAI API credit') })}</small>}
     </div>}
-    {error && <div className="mobile-voice-error" role="alert">{error}<button type="button" aria-label="Dismiss voice input error" onClick={() => setError('')}><Icon name="close" size={14} /></button></div>}
+    {error && <div className="mobile-voice-error" role="alert">{error}<button type="button" aria-label={t('Dismiss voice input error')} onClick={() => setError('')}><Icon name="close" size={14} /></button></div>}
   </div>
 }

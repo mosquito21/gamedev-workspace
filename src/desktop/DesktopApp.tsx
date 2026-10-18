@@ -4,12 +4,14 @@ import { dismissError, sendEvent, startDesktop, surface, useDesktop } from './cl
 import FilesRail, { FilePreview } from './FilesRail'
 import VoiceDock from './VoiceDock'
 import { Icon, Nose } from './Icons'
+import { useT } from '../lib/i18n'
 import './desktop.css'
 
 const Chats = lazy(() => import('./Chats'))
 
 export default function DesktopApp() {
   const state = useDesktop()
+  const t = useT()
   useEffect(() => { startDesktop() }, [])
   useEffect(() => {
     if (surface !== 'workspace') return
@@ -17,11 +19,11 @@ export default function DesktopApp() {
     window.addEventListener('hashchange', route)
     return () => window.removeEventListener('hashchange', route)
   }, [])
-  if (!state.ready) return <div className="desktop-boot"><Nose size={70} /><h1>Mr. Mak</h1><p>{state.error || 'Opening your workspace…'}</p>{state.error && <button className="desk-secondary" onClick={() => startDesktop()}>Reconnect</button>}</div>
+  if (!state.ready) return <div className="desktop-boot"><Nose size={70} /><h1>Mr. Mak</h1><p>{state.error || t('Opening your workspace…')}</p>{state.error && <button className="desk-secondary" onClick={() => startDesktop()}>{t('Reconnect')}</button>}</div>
   return <div className={`desktop-root ${surface}-root`}>
     {surface === 'chats' ? <Suspense fallback={<div className="desktop-boot"><Nose size={50} /></div>}><Chats /></Suspense> : <><div className="workspace-surface"><App />{state.preview && <FilePreview file={state.preview} />}</div><FilesRail /></>}
-    {state.error && <div className="desktop-error" role="alert"><span>{state.error}</span><button onClick={dismissError} aria-label="Dismiss error"><Icon name="close" size={16} /></button></div>}
-    {!state.connected && <div className="desktop-offline">Reconnecting to the local service…</div>}
+    {state.error && <div className="desktop-error" role="alert"><span>{state.error}</span><button onClick={dismissError} aria-label={t('Dismiss error')}><Icon name="close" size={16} /></button></div>}
+    {!state.connected && <div className="desktop-offline">{t('Reconnecting to the local service…')}</div>}
     <VoiceDock />
   </div>
 }

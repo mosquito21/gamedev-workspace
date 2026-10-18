@@ -1,3 +1,4 @@
+import { t } from '../lib/i18n'
 export interface VoiceDraft { id: string; audio: Blob; seconds: number; createdAt: number }
 
 function open(): Promise<IDBDatabase> {
@@ -5,7 +6,7 @@ function open(): Promise<IDBDatabase> {
     const request = indexedDB.open('mrmak-mobile-voice', 1)
     request.onupgradeneeded = () => request.result.createObjectStore('recordings')
     request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(new Error('Could not save the recording on this phone.'))
+    request.onerror = () => reject(new Error(t('Could not save the recording on this phone.')))
   })
 }
 async function transaction<T>(mode: IDBTransactionMode, action: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
@@ -13,7 +14,7 @@ async function transaction<T>(mode: IDBTransactionMode, action: (store: IDBObjec
   return new Promise((resolve, reject) => {
     const tx = db.transaction('recordings', mode), request = action(tx.objectStore('recordings'))
     tx.oncomplete = () => { db.close(); resolve(request.result) }
-    tx.onerror = tx.onabort = () => { db.close(); reject(new Error('Could not save the recording on this phone.')) }
+    tx.onerror = tx.onabort = () => { db.close(); reject(new Error(t('Could not save the recording on this phone.'))) }
   })
 }
 // Recordings are stored as bytes, not Blobs: Safari's Private Browsing (and

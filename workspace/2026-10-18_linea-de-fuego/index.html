@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es" data-mak-report="document">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Línea de Fuego: Malvinas</title>
+  <link rel="stylesheet" href="../_shared/report.css">
+  <link rel="stylesheet" href="../_shared/examples.css">
+  <script defer src="../_shared/report.js"></script>
+</head>
+<body><main class="container">
+<p class="eyebrow">Proyecto · Godot 4.7.2 · v0.03 beta</p>
+<h1>Línea de Fuego: Malvinas 1982</h1>
+<p class="lead">FPS táctico multijugador 6v6 / 9v9 con el ritmo competitivo de Call of Duty 2, ambientado en la Guerra de Malvinas. <em>"Partidas cortas, letales y justas en el barro, la turba y la piedra de Malvinas."</em></p>
+
+<div class="stats">
+  <div class="mak-card"><strong>H2</strong><small>Hito cumplido: ronda de ByD con bots</small></div>
+  <div class="mak-card"><strong>88 MB</strong><small>RAM del servidor con 18 jugadores (meta &lt; 100 MB)</small></div>
+  <div class="mak-card"><strong>1 mapa</strong><small>Pradera del Ganso jugable</small></div>
+</div>
+
+<section>
+<h2>Dónde está todo</h2>
+<ul>
+  <li>Proyecto Godot: <code>G:\Proyectos GODOT\Linea de Fuego Malvinas</code></li>
+  <li>Repositorio: <a href="https://github.com/mosquito21/Linea-de-fuego" target="_blank" rel="noopener">github.com/mosquito21/Linea-de-fuego</a> (tags v0.01 a v0.03 beta)</li>
+  <li>Diseño completo: <code>docs/DISENO.md</code> (GDD v0.5) · movimiento: <code>docs/COD2_MOVIMIENTO.md</code> · estilo: <code>docs/ESTILO_VISUAL.md</code></li>
+  <li>Ficha del proyecto: <a href="../../projects/linea-de-fuego-malvinas/README.md">projects/linea-de-fuego-malvinas</a></li>
+</ul>
+</section>
+
+<section>
+<h2>Pilares</h2>
+<table>
+  <tr><th>Pilar</th><th>En la práctica</th></tr>
+  <tr><td>Letalidad CoD 2</td><td>Fusiles de 2 tiros al torso, 1 a la cabeza. Sin habilidades.</td></tr>
+  <tr><td>Infantería pesada</td><td>Sin sprint infinito ni bunny hop: gana la posición y la puntería.</td></tr>
+  <tr><td>Justicia competitiva</td><td>Servidor autoritativo, compensación de lag, los mismos números para todos.</td></tr>
+  <tr><td>Corre en cualquier PC</td><td>60 FPS en GPUs de 2012, renderer Compatibilidad, servidor de menos de 100 MB.</td></tr>
+  <tr><td>Ambientación seria</td><td>Armas y uniformes de 1982, sin gore y con la misma dignidad para los dos bandos.</td></tr>
+</table>
+</section>
+
+<section class="mak-card">
+<div class="card-header"><span class="card-num">01</span><span class="card-title">Soldados</span></div>
+<div class="variants">
+  <figure class="variant"><p class="var-label">Argentina</p><img src="assets/soldado_arg.webp" alt="Concepto del soldado argentino de 1982" loading="lazy"></figure>
+  <figure class="variant"><p class="var-label">Reino Unido</p><img src="assets/soldado_gbr.webp" alt="Concepto del soldado británico de 1982" loading="lazy"></figure>
+</div>
+</section>
+
+<section class="mak-card">
+<div class="card-header"><span class="card-num">02</span><span class="card-title">Armas</span><span class="card-desc">Implementadas: FAL, L42A1, Mauser .300 y L1A1</span></div>
+<div class="variants">
+  <figure class="variant"><p class="var-label">FAL (Argentina)</p><img src="assets/fal.webp" alt="Concepto del fusil FAL" loading="lazy"></figure>
+  <figure class="variant"><p class="var-label">L1A1 SLR (Reino Unido)</p><img src="assets/l1a1.webp" alt="Concepto del fusil L1A1 SLR" loading="lazy"></figure>
+</div>
+</section>
+
+<section class="mak-card">
+<div class="card-header"><span class="card-num">03</span><span class="card-title">Mapas</span></div>
+<table>
+  <tr><th>Mapa</th><th>Fecha</th><th>Estado</th></tr>
+  <tr><td>Pradera del Ganso (Goose Green)</td><td>28/05/1982</td><td>Jugable: 100 × 192 m, tres carriles, primer contacto a los 8,6 s</td></tr>
+  <tr><td>Monte Longdon</td><td>11–12/06/1982</td><td>Diseñado (H5), noche con bengalas</td></tr>
+  <tr><td>Puerto Argentino (Op. Rosario)</td><td>02/04/1982</td><td>Diseñado (H5), urbano, se hace último</td></tr>
+</table>
+<p class="var-label" style="margin-top:20px">Props de Pradera del Ganso</p>
+<div class="variants">
+  <figure class="variant"><img src="assets/turba.webp" alt="Concepto de pila de turba" loading="lazy"></figure>
+  <figure class="variant"><img src="assets/fardos.webp" alt="Concepto de fardos" loading="lazy"></figure>
+  <figure class="variant"><img src="assets/sacos.webp" alt="Concepto de sacos de arena" loading="lazy"></figure>
+  <figure class="variant"><img src="assets/carro.webp" alt="Concepto de carro" loading="lazy"></figure>
+  <figure class="variant"><img src="assets/bote.webp" alt="Concepto de bote" loading="lazy"></figure>
+</div>
+</section>
+
+<section class="mak-card">
+<div class="card-header"><span class="card-num">04</span><span class="card-title">Desarrollo</span></div>
+<table>
+  <tr><th>Hito</th><th>Contenido</th><th>Estado</th></tr>
+  <tr><td>H0 · Esqueleto</td><td>Servidor headless en Docker, predicción de movimiento</td><td>Listo</td></tr>
+  <tr><td>H1 · Disparo</td><td>FAL y L42A1, ADS, hitscan con compensación de lag</td><td>Listo</td></tr>
+  <tr><td>H2 · Ronda</td><td>Buscar y Destruir, cupos de roles, estadísticas, bots</td><td>Listo</td></tr>
+  <tr><td>H3 · Arsenal</td><td>Todas las armas, granadas y humo</td><td>Pendiente</td></tr>
+  <tr><td>H4 · Arte y rendimiento</td><td>Pradera con arte final, presets gráficos</td><td>En curso</td></tr>
+  <tr><td>H5 · Más mapas</td><td>Monte Longdon y Puerto Argentino</td><td>Pendiente</td></tr>
+</table>
+</section>
+</main></body>
+</html>

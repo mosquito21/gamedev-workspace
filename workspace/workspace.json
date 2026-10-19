@@ -1,6 +1,44 @@
 {
   "entities": [
     {
+      "id": "linea-de-fuego",
+      "title": "Línea de Fuego: Malvinas",
+      "description": "FPS táctico 6v6 / 9v9 con ritmo de CoD 2 en Malvinas 1982: soldados, armas, mapas y estado de desarrollo.",
+      "type": "group",
+      "category": "project",
+      "created": "2026-10-18",
+      "updated": "2026-10-18",
+      "folder": "2026-10-18_linea-de-fuego",
+      "steps": [
+        {
+          "name": "Proyecto",
+          "path": "index.html"
+        }
+      ],
+      "status": "active",
+      "pinned": true,
+      "defaultStep": 0
+    },
+    {
+      "id": "gaucho-zenon",
+      "title": "Gaucho Zenón",
+      "description": "RPG 3D de mundo abierto en la Patagonia de 1881: Zenón, los lugares, el caballo, el pulido y el estado de desarrollo.",
+      "type": "group",
+      "category": "project",
+      "created": "2026-10-18",
+      "updated": "2026-10-18",
+      "folder": "2026-10-18_gaucho-zenon",
+      "steps": [
+        {
+          "name": "Proyecto",
+          "path": "index.html"
+        }
+      ],
+      "status": "active",
+      "pinned": true,
+      "defaultStep": 0
+    },
+    {
       "id": "my-dream-game",
       "title": "My Dream Game",
       "description": "Mr. Mak 64: a small Sky Islands adventure, with character studies, world layouts and a development board.",
@@ -13,7 +51,7 @@
       "type": "group",
       "category": "project",
       "created": "2026-09-15",
-      "updated": "2026-09-15",
+      "updated": "2026-10-18",
       "folder": "2026-09-15_my-dream-game",
       "steps": [
         {
@@ -26,7 +64,7 @@
           }
         }
       ],
-      "status": "active",
+      "status": "archived",
       "pinned": true,
       "sample": true,
       "defaultStep": 0
